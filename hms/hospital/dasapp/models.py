@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+
 
 class CustomUser(AbstractUser):
     USER ={
@@ -96,3 +98,32 @@ class MedicalHistory(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
  
+class OPD(models.Model):
+    patient = models.ForeignKey(PatientReg, on_delete=models.CASCADE, related_name='opd_records')
+    doctor = models.ForeignKey(DoctorReg, on_delete=models.CASCADE, related_name='opd_patients')
+    consultation_date = models.DateTimeField(default=timezone.now)
+    diagnosis = models.TextField(blank=True, null=True)
+    prescription = models.TextField(blank=True, null=True)
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=500.00)
+
+    def __str__(self):
+        return f"OPD: {self.patient.name} with Dr. {self.doctor.name} on {self.consultation_date}"
+
+
+class IPD(models.Model):
+    patient = models.ForeignKey(PatientReg, on_delete=models.CASCADE, related_name='ipd_records')
+    doctor = models.ForeignKey(DoctorReg, on_delete=models.CASCADE, related_name='ipd_patients')
+    admission_date = models.DateTimeField(default=timezone.now)
+    discharge_date = models.DateTimeField(blank=True, null=True)
+    room_number = models.CharField(max_length=20)
+    treatment_details = models.TextField(blank=True, null=True)
+    total_bill = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_discharged = models.BooleanField(default=False)
+
+    def discharge(self):
+        self.is_discharged = True
+        self.discharge_date = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return f"IPD: {self.patient.name} - Room {self.room_number} ({'Discharged' if self.is_discharged else 'Admitted'})"
